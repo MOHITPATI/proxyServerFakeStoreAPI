@@ -2,6 +2,7 @@ package com.mohitBackendDev.Spring1.controllers;
 
 import com.mohitBackendDev.Spring1.Dtos.ProductDto;
 import com.mohitBackendDev.Spring1.models.Product;
+import com.mohitBackendDev.Spring1.models.Category;
 import com.mohitBackendDev.Spring1.services.ProductService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,20 +27,20 @@ public class ProductController {
     }
 
     @GetMapping("/{productId}")
-    public ResponseEntity<Product> getSingleProduct(@PathVariable("productId") Long productId) {
-        MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+    public Product getSingleProduct(@PathVariable("productId") Long productId) {
+//        MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+//
+//        headers.add(
+//                "auth-token", "noaccess4uheyhey"
+//        );
 
-        headers.add(
-                "auth-token", "noaccess4uheyhey"
-        );
+//        ResponseEntity<Product> response = new ResponseEntity(
+//                productService.getSingleProduct(productId),
+//                headers,
+//                HttpStatus
+//        );
 
-        ResponseEntity<Product> response = new ResponseEntity(
-                productService.getSingleProduct(productId),
-                headers,
-                HttpStatus.NOT_FOUND
-        );
-
-        return response;
+        return productService.getSingleProduct(productId);
 //        GetSingleProductResponseDto responseDto = new GetSingleProductResponseDto();
 //        responseDto.setProduct(
 //              return  ;
@@ -61,9 +62,17 @@ public class ProductController {
         return response;
     }
 
-    @PutMapping("/{productId}")
-    public String updateProduct(@PathVariable("productId") Long productId) {
-        return "Updating product";
+    @PatchMapping("/{productId}")
+    public Product updateProduct(@PathVariable("productId") Long productId,
+                                 @RequestBody ProductDto productDto) {
+        Product product = new Product();
+        product.setId(productDto.getId());
+        product.setCategory(new Category());
+        product.getCategory().setName(productDto.getCategory());
+        product.setTitle(productDto.getTitle());
+        product.setPrice(productDto.getPrice());
+        product.setDescription(productDto.getDescription());
+        return productService.updateProduct(productId, product);
     }
 
     @DeleteMapping("/{productId}")

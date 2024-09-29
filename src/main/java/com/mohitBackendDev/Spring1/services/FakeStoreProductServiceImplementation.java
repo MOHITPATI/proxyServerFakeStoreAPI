@@ -3,12 +3,18 @@ package com.mohitBackendDev.Spring1.services;
 import com.mohitBackendDev.Spring1.Dtos.ProductDto;
 import com.mohitBackendDev.Spring1.models.Category;
 import com.mohitBackendDev.Spring1.models.Product;
+import jakarta.annotation.Nullable;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RequestCallback;
+import org.springframework.web.client.ResponseExtractor;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
@@ -22,6 +28,26 @@ public class FakeStoreProductServiceImplementation implements ProductService {
         this.restTemplateBuilder = restTemplateBuilder;
     }
 
+    private <T> ResponseEntity<T> requestForEntity(HttpMethod httpMethod, String url, @Nullable Object request,
+                                                   Class<T> responseType, Object... uriVariables) throws RestClientException {
+        RestTemplate restTemplate = restTemplateBuilder.requestFactory(
+                HttpComponentsClientHttpRequestFactory.class
+        ).build();
+        RequestCallback requestCallback =restTemplate.httpEntityCallback(request, responseType);
+        ResponseExtractor<ResponseEntity<T>> responseExtractor = restTemplate.responseEntityExtractor(responseType);
+        return restTemplate.execute(url, httpMethod, requestCallback, responseExtractor, uriVariables);
+    }
+    private Product convertProductDtoToProduct(ProductDto productDto) {
+        Product product = new Product();
+        product.setId(productDto.getId());
+        product.setTitle(productDto.getTitle());
+        product.setPrice(productDto.getPrice());
+        Category category = new Category();
+        category.setName(productDto.getCategory());
+        product.setCategory(category);
+        product.setImageUrl(productDto.getImage());
+        return product;
+    }
     @Override
     public List<Product> getAllProducts() {
         RestTemplate restTemplate = restTemplateBuilder.build();
@@ -34,30 +60,8 @@ public class FakeStoreProductServiceImplementation implements ProductService {
         List<Product> answer = new ArrayList<>();
 
         for (ProductDto productDto: l.getBody()) {
-            Product product = new Product();
-            product.setId(productDto.getId());
-            product.setTitle(productDto.getTitle());
-            product.setPrice(productDto.getPrice());
-            Category category = new Category();
-            category.setName(productDto.getCategory());
-            product.setCategory(category);
-            product.setImageUrl(productDto.getImage());
-            answer.add(product);
+            answer.add(convertProductDtoToProduct(productDto));
         }
-//        for (Object obj: l.getBody()) {
-//
-//            HashMap<String, Object> hm = (HashMap<String, Object>) obj;
-//
-//            Product product = new Product();
-//            product.setId(Long.valueOf((Integer) hm.get("id")));
-//            product.setTitle((String) hm.get("title"));
-//            product.setPrice(Double.valueOf(hm.get("price").toString()));
-//            Category category = new Category();
-//            category.setName((String) hm.get("category"));
-//            product.setCategory(category);
-//            product.setImageUrl((String) hm.get("image"));
-//            answer.add(product);
-//        }
 
         return answer;
     }
@@ -74,25 +78,9 @@ public class FakeStoreProductServiceImplementation implements ProductService {
                 "https://fakestoreapi.com/products/{id}",
                 ProductDto.class, productId);
 
-
-//        if (response.getStatusCode().is2xxSuccessful()) {
-//
-//        } else {
-//
-//        }
         ProductDto productDto = response.getBody();
 
-        Product product = new Product();
-        product.setId(productDto.getId());
-        product.setTitle(productDto.getTitle());
-        product.setPrice(productDto.getPrice());
-        Category category = new Category();
-        category.setName(productDto.getCategory());
-        product.setCategory(category);
-        product.setImageUrl(productDto.getImage());
-
-        // (url, returnType, params_in_url .....)
-        return product;
+        return convertProductDtoToProduct(productDto);
     }
 
     @Override
@@ -105,22 +93,37 @@ public class FakeStoreProductServiceImplementation implements ProductService {
         );
 
         ProductDto productDto = response.getBody();
-
-        Product product1 = new Product();
-        product1.setId(productDto.getId());
-        product1.setTitle(productDto.getTitle());
-        product1.setPrice(productDto.getPrice());
-        Category category = new Category();
-        category.setName(productDto.getCategory());
-        product1.setCategory(category);
-        product1.setImageUrl(productDto.getImage());
-
-        return product1;
+        return convertProductDtoToProduct(productDto);
     }
 
     @Override
     public Product updateProduct(Long productId, Product product) {
-        return null;
+//        RestTemplate restTemplate = restTemplateBuilder.requestFactory(
+//                HttpComponentsClientHttpRequestFactory.class
+//        ).build();
+//        restTemplate.pat
+        ProductDto fakeStoreProductDto = new ProductDto();
+        fakeStoreProductDto.setDescription(product.getDescription());
+        fakeStoreProductDto.setImage(product.getImageUrl());
+        fakeStoreProductDto.setPrice(product.getPrice());
+        fakeStoreProductDto.setTitle(product.getTitle());
+        fakeStoreProductDto.setCategory(product.getCategory().getName());
+        ResponseEntity<ProductDto> fakeStoreProductDtoResponseEntity = requestForEntity(
+                HttpMethod.PATCH,
+                "https://fakestoreapi.com/products/{id}",
+                fakeStoreProductDto,
+                ProductDto.class,
+                productId
+        );
+//        if (fakeStoreProductDtoResponseEntity.getHeaders())
+//        ProductDto fakeStoreProductDtoResponse = restTemplate.patchForObject(
+//                "https://fakestoreapi.com/products/{id}",
+//                fakeStoreProductDto,
+//                ProductDto.class,
+//                productId
+//        );
+//        return convertProductDtoToProduct(fakeStoreProductDtoResponse);
+        return convertProductDtoToProduct(fakeStoreProductDtoResponseEntity.getBody());
     }
 
     @Override
